@@ -11,7 +11,7 @@ permissions:
 jobs:
   build-android:
     runs-on: ubuntu-latest
-    timeout-minutes: 35
+    timeout-minutes: 40
 
     steps:
       - name: Checkout
@@ -32,7 +32,9 @@ jobs:
             "platform-tools" \
             "build-tools;35.0.1" \
             "platforms;android-35" \
-            "cmdline-tools;latest"
+            "cmdline-tools;latest" \
+            "cmake;3.10.2.4988404" \
+            "ndk;28.1.13356709"
 
       - name: Install Godot 4.7.2 and export templates
         shell: bash
@@ -67,32 +69,46 @@ jobs:
           echo "GODOT_ANDROID_KEYSTORE_DEBUG_USER=androiddebugkey" >> "$GITHUB_ENV"
           echo "GODOT_ANDROID_KEYSTORE_DEBUG_PASSWORD=android" >> "$GITHUB_ENV"
 
-      - name: Import and validate project
+      - name: Import and strictly validate project
         shell: bash
-        run: ./godot --headless --path . --editor --quit
+        run: |
+          ./godot --headless --path . --editor --quit 2>&1 | tee godot-import.log
+          if grep -E "SCRIPT ERROR:|Failed to load script|Parse Error" godot-import.log; then
+            echo "Godot script validation failed."
+            exit 1
+          fi
 
       - name: Export debug APK
         shell: bash
         run: |
           mkdir -p build
-          ./godot --headless --path . --export-debug "Android" build/HopBoundDuo.apk
+          ./godot --headless --path . --export-debug "Android" build/HopBoundDuo.apk 2>&1 | tee godot-apk.log
+          if grep -E "SCRIPT ERROR:|Failed to load script|Parse Error|Project export .* failed" godot-apk.log; then
+            echo "APK export validation failed."
+            exit 1
+          fi
           test -f build/HopBoundDuo.apk
 
-      - name: Install Android Gradle build template
-        shell: bash
-        run: ./godot --headless --path . --install-android-build-template --quit
-
-      - name: Export debug AAB
-        shell: bash
-        run: |
-          ./godot --headless --path . --export-debug "Android AAB" build/HopBoundDuo-debug.aab
-          test -f build/HopBoundDuo-debug.aab
-
-      - name: Upload Android builds
+      - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: HopBoundDuo-Android
-          path: |
-            build/HopBoundDuo.apk
-            build/HopBoundDuo-debug.aab
+          name: HopBoundDuo-APK
+          path: build/HopBoundDuo.apk
+          if-no-files-found: error
+
+      - name: Install Gradle template and export debug AAB
+        shell: bash
+        run: |
+          ./godot --headless --path . --install-android-build-template --export-debug "Android AAB" build/HopBoundDuo-debug.aab 2>&1 | tee godot-aab.log
+          if grep -E "SCRIPT ERROR:|Failed to load script|Parse Error|Project export .* failed" godot-aab.log; then
+            echo "AAB export validation failed."
+            exit 1
+          fi
+          test -f build/HopBoundDuo-debug.aab
+
+      - name: Upload AAB
+        uses: actions/upload-artifact@v4
+        with:
+          name: HopBoundDuo-AAB
+          path: build/HopBoundDuo-debug.aab
           if-no-files-found: error
