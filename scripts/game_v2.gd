@@ -1155,7 +1155,7 @@ func _spawn_local_player(peer_id: int, row: int, x: float, score: int) -> void:
 
 func _player_color(peer_id: int) -> Color:
 	var palette := [Color("#54d36f"), Color("#f0d85b"), Color("#64b5f6"), Color("#e978c6")]
-	var slot := abs(peer_id - 1) % palette.size()
+	var slot: int = abs(peer_id - 1) % palette.size()
 	return palette[slot].lightened(0.06) if peer_id == _local_visual_id() else palette[slot]
 
 func _apply_player_state(peer_id: int, row: int, x: float, score: int) -> void:
