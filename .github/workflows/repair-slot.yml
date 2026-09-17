@@ -1,0 +1,37 @@
+name: Repair Final V2 Type
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/repair-slot.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  repair:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - name: Patch final inferred integer
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path('scripts/game_v2.gd')
+          s = p.read_text()
+          old = 'var slot := abs(peer_id - 1) % palette.size()'
+          new = 'var slot: int = abs(peer_id - 1) % palette.size()'
+          if old not in s:
+              raise SystemExit('Expected player color slot declaration not found')
+          p.write_text(s.replace(old, new, 1))
+          PY
+      - name: Commit repair
+        shell: bash
+        run: |
+          git config user.name "HopBoundDuo Build Bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add scripts/game_v2.gd
+          git commit -m "Fix final V2 integer type [skip ci]"
+          git push
