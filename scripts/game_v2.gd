@@ -145,7 +145,7 @@ func _unhandled_input(event: InputEvent) -> void:
 			swipe_tracking = true
 		elif swipe_tracking:
 			swipe_tracking = false
-			var delta_pos := event.position - swipe_start
+			var delta_pos: Vector2 = event.position - swipe_start
 			if delta_pos.length() >= 52.0:
 				if absf(delta_pos.x) > absf(delta_pos.y):
 					_request_move(Vector2i(1 if delta_pos.x > 0.0 else -1, 0))
@@ -364,7 +364,7 @@ func _make_vehicle(color: Color, truck: bool, neon: bool) -> Node3D:
 		windshield.position = Vector3(-0.42, 0.72, 0.0)
 		root.add_child(windshield)
 	for sx in [-0.55, 0.55]:
-		var wheel_x := sx * (1.6 if truck else 1.0)
+		var wheel_x: float = float(sx) * (1.6 if truck else 1.0)
 		for sz in [-0.43, 0.43]:
 			var wheel := _mesh_cylinder(0.15, 0.11, Color("#1d2022"), 8)
 			wheel.rotation_degrees.x = 90.0
@@ -1277,7 +1277,7 @@ func _local_visual_id() -> int:
 	return 1
 
 func _spawn_x(peer_id: int) -> float:
-	var slot := (peer_id - 1) % 4
+	var slot: int = (peer_id - 1) % 4
 	return [-2.4, -0.8, 0.8, 2.4][slot]
 
 func _row_z(row: int) -> float:
